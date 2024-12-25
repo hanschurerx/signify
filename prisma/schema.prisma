@@ -1,0 +1,93 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 用户模型
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  signs     Sign[] // 用户的签名
+  orders    Order[] // 用户的订单
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// 签名模型
+model Sign {
+  id        String    @id @default(cuid())
+  name      String // 签名名称
+  imageUrl  String // 签名图片URL
+  userId    String // 关联用户
+  user      User      @relation(fields: [userId], references: [id])
+  products  Product[] // 使用此签名的产品
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+// 产品模型
+model Product {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  price         Float
+  mediaType     String // vinyl-banner, banner-stand
+  category      String // 产品分类
+  sizes         Json // 可用尺寸和价格
+  finishOptions Json // 可用工艺选项
+  imageUrl      String? // 产品图片
+  featured      Boolean  @default(false)
+  status        String   @default("active") // active, inactive
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  Sign          Sign?    @relation(fields: [signId], references: [id])
+  signId        String?
+  Order         Order?   @relation(fields: [orderId], references: [id])
+  orderId       String?
+}
+
+// 订单模型
+model Order {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  products    Product[] // 订单中的产品
+  status      String    @default("pending") // pending, paid, shipped, delivered
+  totalAmount Float
+  address     String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// 搜索历史模型
+model SearchHistory {
+  id        String   @id @default(cuid())
+  query     String
+  userId    String?
+  createdAt DateTime @default(now())
+}
+
+// 定制订单模型
+model CustomOrder {
+  id           String   @id @default(cuid())
+  productId    String // 关联的产品
+  size         String // 选择的尺寸
+  finishOption String // 选择的工艺
+  designUrl    String // 客户上传的设计图
+  price        Float // 最终价格
+  status       String   @default("pending")
+  userId       String? // 关联的用户
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
