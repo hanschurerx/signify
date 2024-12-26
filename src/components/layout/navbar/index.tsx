@@ -12,14 +12,14 @@ export async function Navbar() {
       title: "Products",
       path: "/products",
     },
-    {
-      title: "About",
-      path: "/about",
-    },
-    {
-      title: "Contact",
-      path: "/contact",
-    },
+    // {
+    //   title: "About",
+    //   path: "/about",
+    // },
+    // {
+    //   title: "Contact",
+    //   path: "/contact",
+    // },
   ];
 
   return (

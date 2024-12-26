@@ -1,11 +1,39 @@
-// "use client";
-
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import Image from "next/image";
 
+// 定义类型
+type Size = {
+  name: string;
+  id: string;
+  price: number;
+};
+
+type FinishOption = {
+  name: string;
+  id: string;
+  price: number;
+};
+
+type Product = {
+  id: string;
+  title: string;
+  description: string;
+  imageUrl: string | null;
+  price: number;
+  sizes: string;
+  finishOptions: string;
+  status: string;
+  category: string | null;
+  createdAt: Date;
+};
+
+type SearchParams = {
+  category?: string;
+};
+
 async function getProducts(category?: string) {
-  return await prisma.product.findMany({
+  const products = await prisma.product.findMany({
     where: {
       status: "active",
       ...(category && category !== "all" ? { category } : {}),
@@ -14,9 +42,34 @@ async function getProducts(category?: string) {
       createdAt: "desc",
     },
   });
+
+  // 解析 JSON 字段，添加错误处理
+  return products.map((product) => {
+    try {
+      const sizes = JSON.parse(product.sizes as string);
+      const finishOptions = JSON.parse(product.finishOptions as string);
+
+      return {
+        ...product,
+        sizes: Array.isArray(sizes) ? sizes : [],
+        finishOptions: Array.isArray(finishOptions) ? finishOptions : [],
+      };
+    } catch (error) {
+      console.error(`Error parsing JSON for product ${product.id}:`, error);
+      return {
+        ...product,
+        sizes: [],
+        finishOptions: [],
+      };
+    }
+  });
 }
 
-export default async function ProductsPage({ searchParams }: any) {
+export default async function ProductsPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
   const products = await getProducts(searchParams?.category);
 
   return (
@@ -50,17 +103,17 @@ export default async function ProductsPage({ searchParams }: any) {
                   {/* 尺寸选项 */}
                   <div className="text-sm text-gray-500">
                     <span className="font-medium">可选尺寸：</span>
-                    {(product.sizes as any[])
+                    {product.sizes
                       .slice(0, 3)
-                      .map((size: any) => size.name)
+                      .map((size) => size.name)
                       .join("、")}
-                    {(product.sizes as any[]).length > 3 && "..."}
+                    {product.sizes.length > 3 && "..."}
                   </div>
                   {/* 工艺选项 */}
                   <div className="text-sm text-gray-500">
                     <span className="font-medium">工艺选项：</span>
-                    {(product.finishOptions as any[])
-                      .map((option: any) => option.name)
+                    {product.finishOptions
+                      .map((option) => option.name)
                       .join("、")}
                   </div>
                 </div>

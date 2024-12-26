@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import ProductPageClient from "./page-client";
-import type { Metadata } from "next";
+import ProductPage from "./page";
+import { Metadata } from "next";
 
 interface PageParams {
   params: {
@@ -46,7 +46,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function ProductPage({ params }: PageParams) {
+export default async function ProductPageServer({ params }: PageParams) {
   const product = await getProduct(params.id);
-  return <ProductPageClient product={product} />;
+  return <ProductPage product={product} />;
 }

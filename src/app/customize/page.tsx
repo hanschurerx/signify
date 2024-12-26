@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { getUser } from "@/lib/auth";
 
 const MEDIA_TYPES = [
   {
@@ -49,6 +50,28 @@ export default function CustomizePage() {
   const [customWidth, setCustomWidth] = useState("");
   const [customHeight, setCustomHeight] = useState("");
   const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+
+  // 检查用户登录状态
+  useEffect(() => {
+    const currentUser = getUser();
+    if (!currentUser) {
+      router.push("/login");
+    } else {
+      setUser(currentUser);
+    }
+  }, [router]);
+
+  if (!user) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <h2 className="text-xl font-medium">请先登录</h2>
+          <p className="text-gray-500 mt-2">正在跳转到登录页面...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -79,47 +102,35 @@ export default function CustomizePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) return;
+
+    const user = getUser();
+    const token = localStorage.getItem("token");
+
+    if (!user || !token) {
+      router.push("/login");
+      return;
+    }
 
     try {
-      // 1. 上传图片
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("name", `${mediaType.name}-${new Date().toISOString()}`);
-
-      const signResponse = await fetch("/api/signs/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!signResponse.ok) throw new Error("Failed to upload sign");
-      const sign = await signResponse.json();
-
-      // 2. 创建产品
-      const productResponse = await fetch("/api/products", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title: `${mediaType.name} - ${selectedSize.name}`,
-          mediaType: mediaType.id,
-          size:
-            selectedSize.id === "custom"
-              ? `${customWidth}x${customHeight}`
-              : selectedSize.name,
-          finishOption: selectedFinish.name,
-          signId: sign.id,
-          price: parseFloat(calculatePrice()),
-        }),
-      });
-
-      if (productResponse.ok) {
-        const product = await productResponse.json();
-        router.push(`/product/${product.id}`);
-      }
+      // 先跳转到结账页面，带上必要的参数
+      router.push(
+        `/checkout?` +
+          new URLSearchParams({
+            mediaTypeId: mediaType.id,
+            customization: JSON.stringify({
+              size:
+                selectedSize.id === "custom"
+                  ? `${customWidth}x${customHeight}`
+                  : selectedSize.name,
+              finishOption: selectedFinish.name,
+              price: calculatePrice(),
+            }),
+            amount: calculatePrice(),
+          })
+      );
     } catch (error) {
-      console.error("Error creating product:", error);
+      console.error("Error:", error);
+      alert("操作失败，请重试");
     }
   };
 
@@ -260,7 +271,7 @@ export default function CustomizePage() {
               disabled={!file}
               className="w-full bg-indigo-600 text-white py-3 px-4 rounded-md hover:bg-indigo-700 disabled:bg-gray-400"
             >
-              创建产品 - ${calculatePrice()}
+              创建产品订单 - ${calculatePrice()}
             </button>
           </form>
         </div>
@@ -297,7 +308,7 @@ export default function CustomizePage() {
               {selectedFinish.name}
             </p>
             <p>
-              <span className="font-medium">价格：</span>${calculatePrice()}
+              <span className="font-medium">价格��</span>${calculatePrice()}
             </p>
           </div>
         </div>

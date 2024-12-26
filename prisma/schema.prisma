@@ -17,6 +17,9 @@ datasource db {
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
+  username  String   @unique
+  phone     String   @unique
+  password  String
   name      String?
   signs     Sign[] // 用户的签名
   orders    Order[] // 用户的订单
@@ -59,15 +62,16 @@ model Product {
 
 // 订单模型
 model Order {
-  id          String    @id @default(cuid())
-  userId      String
-  user        User      @relation(fields: [userId], references: [id])
-  products    Product[] // 订单中的产品
-  status      String    @default("pending") // pending, paid, shipped, delivered
-  totalAmount Float
-  address     String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  products      Product[] // 订单中的产品
+  status        String    @default("pending") // pending, paid, shipped, delivered
+  totalAmount   Float
+  customization String? // 存储定制选项的 JSON
+  address       String? // 收货地址
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }
 
 // 搜索历史模型
