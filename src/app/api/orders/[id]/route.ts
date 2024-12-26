@@ -22,20 +22,23 @@ async function verifyToken(request: Request) {
   }
 }
 
+interface RouteContext {
+  params: {
+    id: string;
+  };
+}
+
 // GET - 获取订单详情
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: Request, context: RouteContext) {
   try {
     const user = await verifyToken(request);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return new NextResponse(null, { status: 401 });
     }
 
     const order = await prisma.order.findUnique({
       where: {
-        id: params.id,
+        id: context.params.id,
         userId: user.id,
       },
       include: {
@@ -44,35 +47,29 @@ export async function GET(
     });
 
     if (!order) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      return new NextResponse(null, { status: 404 });
     }
 
     return NextResponse.json(order);
   } catch (error) {
     console.error("Error fetching order:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch order" },
-      { status: 500 }
-    );
+    return new NextResponse(null, { status: 500 });
   }
 }
 
 // PATCH - 更新订单
-export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: Request, context: RouteContext) {
   try {
     const user = await verifyToken(request);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return new NextResponse(null, { status: 401 });
     }
 
     const { address, status } = await request.json();
 
     const order = await prisma.order.update({
       where: {
-        id: params.id,
+        id: context.params.id,
         userId: user.id,
       },
       data: {
@@ -87,9 +84,6 @@ export async function PATCH(
     return NextResponse.json(order);
   } catch (error) {
     console.error("Error updating order:", error);
-    return NextResponse.json(
-      { error: "Failed to update order" },
-      { status: 500 }
-    );
+    return new NextResponse(null, { status: 500 });
   }
 }
